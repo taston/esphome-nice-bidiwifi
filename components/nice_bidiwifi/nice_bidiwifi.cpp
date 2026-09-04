@@ -123,6 +123,12 @@ void NiceBidiWiFi::send_control_cmd(uint8_t cmd) {
   ESP_LOGI(TAG, "Sending control command: %s (0x%02X)", t4_control_cmd_name(cmd), cmd);
   auto pkt = t4_build_cmd(this->device_address_, this->hub_address_, cmd);
   this->tx_queue_.push(std::move(pkt));
+
+  // Po LOCK / UNLOCK odczytaj aktualny stan Operator Block (0x9A)
+  if (cmd == 0x0F || cmd == 0x10) {
+    ESP_LOGI(TAG, "LOCK/UNLOCK sent - requesting Operator Block status (0x9A)");
+    this->send_get_register(REG_OP_BLOCK);
+  }
 }
 
 void NiceBidiWiFi::send_inf_cmd(uint8_t device_type, uint8_t register_id, uint8_t run_cmd,
@@ -233,6 +239,7 @@ void NiceBidiWiFi::init_device_(uint8_t addr1, uint8_t addr2, uint8_t device_typ
     this->tx_queue_.push(t4_build_inf(addr, this->hub_address_, DEV_CONTROLLER, REG_STANDBY_ACT, RUN_GET));
     this->tx_queue_.push(t4_build_inf(addr, this->hub_address_, DEV_CONTROLLER, REG_BLINK_ON, RUN_GET));
     this->tx_queue_.push(t4_build_inf(addr, this->hub_address_, DEV_CONTROLLER, REG_KEY_LOCK, RUN_GET));
+    this->tx_queue_.push(t4_build_inf(addr, this->hub_address_, DEV_CONTROLLER, REG_OP_BLOCK, RUN_GET));
     this->tx_queue_.push(t4_build_inf(addr, this->hub_address_, DEV_CONTROLLER, REG_DIAG_BB, RUN_GET));
     // Query all registered number registers at init
     for (auto *num : this->numbers_) {
