@@ -834,7 +834,17 @@ void NiceBidiWiFi::parse_evt_packet_(const std::vector<uint8_t> &d) {
 
       case REG_OP_BLOCK:
         if (data_len >= 1 && d.size() > 14) {
-          ESP_LOGI(TAG, "Operator block: %s", (d[14] != 0) ? "BLOCKED" : "FREE");
+          bool blocked = (d[14] != 0);
+
+          ESP_LOGI(TAG, "Operator block: %s", blocked ? "BLOCKED" : "FREE");
+
+          this->lock_state_ = blocked;
+
+          if (this->locked_sensor_ != nullptr) {
+            this->locked_sensor_->publish_state(blocked);
+          }
+
+          this->notify_state_change_();
         }
         break;
 
